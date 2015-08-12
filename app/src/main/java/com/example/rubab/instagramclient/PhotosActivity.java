@@ -1,5 +1,6 @@
 package com.example.rubab.instagramclient;
 
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 
 
 public class PhotosActivity extends ActionBarActivity {
+    private SwipeRefreshLayout swipeContainer;
 
     public static final String CLIENT_ID = "1eef72e2bf2d453ca03c87df09bdfb89";
     private ArrayList<InstagramPhoto> photos;
@@ -28,6 +30,7 @@ public class PhotosActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photos);
+
         //Send out API request to Popular Photos
         photos = new ArrayList<>();
         //1. Create the adapter linking it to the source
@@ -36,11 +39,21 @@ public class PhotosActivity extends ActionBarActivity {
         ListView lvPhotos = (ListView) findViewById(R.id.lvPhotos);
         //3. Set the adapter binding it to the listview
         lvPhotos.setAdapter(aPhotos);
+
+        swipeContainer = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
+        //setup refresh listener which triggers new data loading
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                fetchPopularPhotos(0);
+            }
+        });
+
         //Fetch the popular photos
-        fetchPopularPhotos();
+        //fetchPopularPhotos();
     }
 
-    public void fetchPopularPhotos()
+    public void fetchPopularPhotos(int page)
     {
     //    Popular Photos: https://api.instagram.com/v1/media/popular?access_token=ACCESS-TOKEN
 
@@ -54,8 +67,8 @@ public class PhotosActivity extends ActionBarActivity {
             //onSuccess
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                //Expecting a JSON object
-
+               //Expecting a JSON object
+                photos.clear();
 
                 //      iterate each of the photo items and decode the item into a java object
                 JSONArray photosJSON = null;
@@ -84,8 +97,9 @@ public class PhotosActivity extends ActionBarActivity {
 
                         //Add each decoded object to the photo array
                         photos.add(photo);
-
+                        swipeContainer.setRefreshing(false);
                     }
+                    //swipeContainer.setRefreshing(false);
 
                 } catch (JSONException e){
                     e.printStackTrace();
@@ -99,7 +113,7 @@ public class PhotosActivity extends ActionBarActivity {
             //onFailure
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-
+               Log.d("DEBUG", "Fetch timeline error: " + throwable.toString());
             }
         });
 
